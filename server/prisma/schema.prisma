@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Review {
+  id          String       @id @default(cuid())
+  repo        String
+  prNumber    Int
+  prTitle     String
+  prUrl       String
+  status      ReviewStatus @default(RUNNING)
+  review      String?      @db.Text
+  verdict     String?
+  createdAt   DateTime     @default(now())
+  completedAt DateTime?
+
+  events Event[]
+
+  @@index([repo])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  reviewId  String
+  type      EventType @default(STEP)
+  step      String?
+  duration  Int       @default(0)
+  message   String?
+  review    String?   @db.Text
+  verdict   String?
+  timestamp DateTime  @default(now())
+
+  reviewRef Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@index([timestamp])
+}
+
+enum ReviewStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum EventType {
+  STEP
+  REVIEW
+  ERROR
+  COMPLETE
+}
